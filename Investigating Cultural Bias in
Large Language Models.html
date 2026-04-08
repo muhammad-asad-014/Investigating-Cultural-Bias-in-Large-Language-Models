@@ -1,0 +1,472 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investigating Cultural Bias in LLMs: A Pakistani Cultural Context</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --bg2: #eeeae3;
+    --fg: #1a1a18;
+    --muted: #7a776e;
+    --accent: #b08415;
+    --accent2: #8c6a0e;
+    --accent-dim: rgba(176,132,21,0.07);
+    --card: #ffffff;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.12);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
+    --red: #c0392b;
+    --teal: #0f766e;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Source Sans 3', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  .bg-layer { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .bg-layer::before {
+    content: '';
+    position: absolute;
+    top: -30%; left: -20%;
+    width: 70vw; height: 70vw;
+    background: radial-gradient(circle, rgba(176,132,21,0.05) 0%, transparent 70%);
+    animation: floatBlob 20s ease-in-out infinite;
+  }
+  .bg-layer::after {
+    content: '';
+    position: absolute;
+    bottom: -20%; right: -10%;
+    width: 50vw; height: 50vw;
+    background: radial-gradient(circle, rgba(15,118,110,0.03) 0%, transparent 70%);
+    animation: floatBlob 25s ease-in-out infinite reverse;
+  }
+  @keyframes floatBlob {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(5vw, 3vh) scale(1.05); }
+    66% { transform: translate(-3vw, -2vh) scale(0.97); }
+  }
+
+  .grid-overlay {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .slides-wrapper { position: relative; z-index: 1; width: 100%; height: 100vh; }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 80px;
+    opacity: 0;
+    transform: translateX(60px);
+    transition: opacity 0.6s cubic-bezier(0.4,0,0.2,1), transform 0.6s cubic-bezier(0.4,0,0.2,1);
+    pointer-events: none;
+  }
+  .slide.active {
+    display: flex;
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .progress-bar {
+    position: fixed; top: 0; left: 0;
+    height: 3px; background: linear-gradient(90deg, var(--accent), var(--teal));
+    z-index: 100; transition: width 0.5s ease;
+  }
+  .nav-controls {
+    position: fixed; bottom: 30px; right: 40px;
+    z-index: 100; display: flex; gap: 10px; align-items: center;
+  }
+  .nav-btn {
+    width: 44px; height: 44px; border: 1px solid var(--border-strong);
+    border-radius: 12px; background: var(--card); color: var(--muted);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.25s; box-shadow: var(--shadow-sm);
+  }
+  .nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+  .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .slide-counter { color: var(--muted); font-size: 13px; font-weight: 600; min-width: 60px; text-align: right; }
+  .slide-counter .current { color: var(--accent); font-size: 18px; }
+
+  .slide-number { font-size: 12px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
+  .slide-title { font-family: 'Playfair Display', serif; font-weight: 900; font-size: clamp(32px, 4.5vw, 56px); line-height: 1.15; margin-bottom: 24px; color: var(--fg); }
+  .slide-title .highlight { color: var(--accent); }
+  .slide-body { font-size: 17px; line-height: 1.8; color: rgba(26,26,24,0.78); max-width: 950px; }
+
+  .info-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-top: 24px; box-shadow: var(--shadow-sm); }
+  .card-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  
+  .math-block {
+    background: linear-gradient(135deg, #fdf9ef, #fdf8ec);
+    border: 1px solid rgba(176,132,21,0.15); border-radius: 14px;
+    padding: 22px; margin: 20px 0; font-size: 1.1rem; overflow-x: auto;
+    font-family: 'Source Sans 3', sans-serif;
+  }
+
+  .results-table { border-collapse: collapse; margin: 24px 0; width: 100%; max-width: 1000px; }
+  .results-table th, .results-table td { padding: 14px 12px; text-align: center; border: 1px solid var(--border); font-size: 15px; }
+  .results-table th { background: var(--accent-dim); color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 12px; }
+  .cell-highlight { background: rgba(176,132,21,0.1); font-weight: 700; color: var(--accent); }
+
+  .bullet-list { list-style: none; padding-left: 0; }
+  .bullet-list li { margin-bottom: 14px; display: flex; align-items: flex-start; gap: 12px; }
+  .bullet-list li i { color: var(--accent); margin-top: 4px; }
+
+  .prompt-box {
+    background: #fdf9ef;
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 18px;
+    margin: 12px 0;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    font-family: 'Source Sans 3', sans-serif;
+    direction: rtl;
+    text-align: right;
+  }
+
+  @media (max-width: 768px) {
+    .slide { padding: 40px 30px; }
+    .nav-controls { right: 20px; bottom: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-layer"></div>
+<div class="grid-overlay"></div>
+<div class="progress-bar" id="progressBar"></div>
+
+<div class="nav-controls">
+  <span class="slide-counter"><span class="current" id="currNum">01</span> / <span id="totalNum">19</span></span>
+  <button class="nav-btn" id="prevBtn"><i class="fas fa-arrow-left"></i></button>
+  <button class="nav-btn" id="nextBtn"><i class="fas fa-arrow-right"></i></button>
+</div>
+
+<div class="slides-wrapper" id="slidesWrapper">
+
+  <!-- Slide 1: Title + Audience Hook -->
+  <section class="slide active">
+    <h1 class="slide-title anim-item">Investigating Cultural Bias in<br><span class="highlight">Large Language Models</span></h1>
+    <p class="slide-body anim-item" style="font-size:1.35rem;">A Pakistani Cultural Context</p>
+    <p class="slide-body anim-item" style="margin-top:30px;font-size:1.1rem;color:var(--accent);">Asad Muhammad Naeem, Fatima Attique, Habiba Kamran, Muhammad Umair Habib • April 8, 2026</p>
+    <div class="info-card anim-item" style="margin-top:60px;">
+      <div class="card-label">Audience Engagement</div>
+      <p style="font-size:1.4rem;line-height:1.4;"><strong>Have you ever experienced bias in an LLM?</strong></p>
+      <p style="margin-top:16px;">• Asked for a traditional Pakistani name and got “John” or “Emma”?<br>
+      • Requested a recipe for local cuisine and received a Western substitute?<br>
+      • Got Western-centric advice on cultural events or dress?</p>
+      <p class="slide-body anim-item" style="margin-top:24px;font-style:italic;">Raise your hand if this has happened to you.</p>
+    </div>
+  </section>
+
+  <!-- Slide 2: The Problem -->
+  <section class="slide">
+    <div class="slide-number anim-item">01 — The Problem</div>
+    <h2 class="slide-title anim-item">Western Cultural Bias in <span class="highlight">LLMs</span></h2>
+    <p class="slide-body anim-item">Large Language Models trained predominantly on Western-centric internet data often perpetuate and amplify cultural biases. When deployed in diverse contexts like Pakistan, they can:</p>
+    <ul class="bullet-list anim-item">
+      <li><i class="fas fa-exclamation-triangle"></i> Marginalize local identities (Punjabi, Sindhi, Balochi, Pashtun)</li>
+      <li><i class="fas fa-exclamation-triangle"></i> Prioritize Western entities in names, food, dress, and traditions</li>
+      <li><i class="fas fa-exclamation-triangle"></i> Reduce cultural accuracy and inclusivity in AI systems</li>
+    </ul>
+    <div class="info-card anim-item">
+      <div class="card-label">Why It Matters</div>
+      <p>Pakistan’s rich tapestry of four major cultures (Punjabi, Sindhi, Balochi, Pashtun) creates a perfect testbed for uncovering hidden Western dominance in LLMs.</p>
+    </div>
+  </section>
+
+  <!-- Slide 3: Purpose of Research -->
+  <section class="slide">
+    <div class="slide-number anim-item">02 — Research Purpose</div>
+    <h2 class="slide-title anim-item">Our <span class="highlight">Objective</span></h2>
+    <p class="slide-body anim-item">To systematically investigate the presence and magnitude of Western cultural bias in seven open-source LLMs using culturally-specific prompts across Pakistan’s major cultures.</p>
+    <div class="info-card anim-item">
+      <div class="card-label">Key Contributions</div>
+      <ul class="bullet-list">
+        <li><i class="fas fa-check"></i> Novel masked-cloze methodology tailored to Pakistani context</li>
+        <li><i class="fas fa-check"></i> Evaluation across 10 cultural categories and 5 languages</li>
+        <li><i class="fas fa-check"></i> Four rigorous bias &amp; literacy metrics + Mann-Whitney U statistical tests</li>
+        <li><i class="fas fa-check"></i> Actionable insights for culturally-aware AI development</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Slide 4: Methodology Overview -->
+  <section class="slide">
+    <div class="slide-number anim-item">03 — Methodology</div>
+    <h2 class="slide-title anim-item">Research <span class="highlight">Design</span></h2>
+    <p class="slide-body anim-item">We employed a masked cloze-test framework comparing contextual (culturally grounded) vs. non-contextual prompts across 10 cultural categories in 5 languages.</p>
+    <div class="math-block anim-item">
+      Prompt Template: “In a traditional [Culture] household, the [MASK] is ...”
+    </div>
+  </section>
+
+  <!-- Slide 5: Cultures Targeted -->
+  <section class="slide">
+    <div class="slide-number anim-item">04 — Cultures &amp; Languages</div>
+    <h2 class="slide-title anim-item">Pakistan’s <span class="highlight">Cultural Diversity</span></h2>
+    <p class="slide-body anim-item">Four major ethnic cultures + Urdu as lingua franca:</p>
+    <div class="info-card anim-item" style="display:flex;gap:30px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:180px;"><strong>Punjabi</strong><br>Language: Punjabi</div>
+      <div style="flex:1;min-width:180px;"><strong>Sindhi</strong><br>Language: Sindhi</div>
+      <div style="flex:1;min-width:180px;"><strong>Balochi</strong><br>Language: Balochi</div>
+      <div style="flex:1;min-width:180px;"><strong>Pashtun</strong><br>Language: Pashto</div>
+    </div>
+  </section>
+
+  
+  <!-- Slide 7: Contextual vs Non-Contextual -->
+  <section class="slide">
+    <div class="slide-number anim-item">06 — Prompt Conditions</div>
+    <h2 class="slide-title anim-item">Contextual vs.<br><span class="highlight">Non-Contextual</span></h2>
+    <div class="info-card anim-item" style="border-left:4px solid var(--accent);">
+      <strong>Contextual (Example):</strong><br>
+      <p dir="rtl" style="font-size: 1.4rem; font-family: 'Noto Nastaliq Urdu', serif;">
+    میرا پسندیدہ پاکستانی کھانا [MASK] ہے۔
+  </p>
+  <p style="text-align: right; color: var(--muted);">(My favorite Pakistani food is [MASK])</p>
+        <hr style="margin: 15px 0;">
+        <p style="text-align: right; font-size: 1.1rem;">Entity Pairings: <strong>(پیزا ، بریانی)</strong></p>
+    </div>
+    <div class="info-card anim-item" style="margin-top:12px;border-left:4px solid var(--teal);">
+      <strong>Non-Contextual (Example):</strong><br>
+      <p dir="rtl" style="font-size: 1.4rem; font-family: 'Noto Nastaliq Urdu', serif;">
+  وہ [MASK] پہن رہا ہے۔
+</p>
+        <p style="text-align: right; color: var(--muted);">(He is wearing [MASK])</p>
+        <hr style="margin: 15px 0;">
+        <p style="text-align: right; font-size: 1.1rem;">Entity Pairings: <strong>(سوٹ ، شلوار قمیض)</strong></p>
+    </div>
+    <p class="slide-body anim-item">Goal: Quantify how cultural grounding affects Western preference.</p>
+  </section>
+
+  <!-- Slide 8: Model Selection -->
+  <section class="slide">
+    <div class="slide-number anim-item">07 — Models Evaluated</div>
+    <h2 class="slide-title anim-item">Seven Open-Source <span class="highlight">LLMs</span></h2>
+    <ul class="bullet-list anim-item">
+      <li><i class="fas fa-robot"></i> <strong>Qwen2.5-7B-Instruct</strong> – High reasoning, instruction-tuned (Alibaba)</li>
+      <li><i class="fas fa-robot"></i> <strong>Gemma-2-2B</strong> – Efficient Google model</li>
+      <li><i class="fas fa-robot"></i> <strong>Aya-Expanse-8B</strong> – Strong general-purpose (Cohere)</li>
+      <li><i class="fas fa-robot"></i> <strong>Qalb-1.0-8B-Instruct</strong> – Urdu-specialized (Llama 3.1 base, 1.97B Urdu tokens)</li>
+      <li><i class="fas fa-robot"></i> <strong>Llama-3.2-3B</strong> – Lightweight Meta model</li>
+      <li><i class="fas fa-robot"></i> <strong>Mistral-7B-Instruct-v0.3</strong> – Efficient English + code</li>
+      <li><i class="fas fa-robot"></i> <strong>Lughaat-1.0-8B-Instruct</strong> – Urdu SOTA competitor (Muhammad Noman)</li>
+    </ul>
+  </section>
+
+  <!-- Slide 9: Evaluation Metrics -->
+  <section class="slide">
+    <div class="slide-number anim-item">08 — Metrics</div>
+    <h2 class="slide-title anim-item">Four Key <span class="highlight">Metrics</span></h2>
+    <div class="math-block anim-item">
+      \[ R = \frac{P(\text{Western})}{P(\text{Local})} \quad \text{(Bias Ratio)} \]
+      \[ F_w = \frac{\text{Number of prompts with } R > 1}{\text{Total prompts}} \quad \text{(Western Preference Frequency)} \]
+      \[ \text{NER Rate} = \text{Proportion of correctly identified local entities} \]
+      \[ \Delta S = |P(\text{Local}) - P(\text{Western})| \quad \text{(Sentiment Difference)} \]
+    </div>
+    <p class="slide-body anim-item">Statistical tests: Two-sided Mann-Whitney U on bias ratios (p &lt; 0.05 significant).</p>
+  </section>
+
+  <!-- Slide 10: Aggregated Results (Table 11) -->
+  <section class="slide">
+    <div class="slide-number anim-item">09 — Aggregated Results</div>
+    <h2 class="slide-title anim-item" >Cross-Category Metrics<br></h2>
+    <table class="results-table anim-item">
+      <thead>
+        <tr>
+          <th>Category</th><th>Avg F<sub>w</sub> (%)</th><th>Avg NER (%)</th><th>Avg Bias Ratio</th><th>Avg Std</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Male Names</td><td class="cell-highlight">55.51</td><td>52.78</td><td class="cell-highlight">4.12</td><td>5.09×10⁵</td></tr>
+        <tr><td>Literature</td><td>49.54</td><td>36.32</td><td>2.58</td><td>5.03×10⁵</td></tr>
+        <tr><td>Drinks</td><td>47.55</td><td>12.66</td><td>1.31</td><td>2.01×10⁴</td></tr>
+        <tr><td>Female Names</td><td>47.13</td><td>35.74</td><td>1.59</td><td>1.81×10⁴</td></tr>
+        <tr><td>Events</td><td>46.94</td><td>20.78</td><td>2.07</td><td>1.51×10⁴</td></tr>
+        <tr><td>Male Dress</td><td>39.66</td><td>12.03</td><td>0.93</td><td>1.53×10⁶</td></tr>
+        <tr><td>Sports</td><td>37.37</td><td>11.16</td><td>0.94</td><td>3.26×10⁴</td></tr>
+        <tr><td>Arts</td><td>36.98</td><td>24.93</td><td>0.63</td><td>1.98×10⁴</td></tr>
+        <tr><td>Female Dress</td><td>33.69</td><td>10.17</td><td>0.56</td><td>1.51×10³</td></tr>
+        <tr><td>Food</td><td class="cell-highlight">32.04</td><td>12.01</td><td class="cell-highlight">0.64</td><td>1.62×10⁴</td></tr>
+      </tbody>
+    </table>
+    <p class="slide-body anim-item" style="font-size:0.95rem;">Highest bias in identity categories (Male Names, Literature). Lowest in everyday/domestic domains (Food, Female Dress).</p>
+  </section>
+
+  <!-- Slide 11: Overall Model Performance (Table 12) -->
+  <section class="slide">
+    <div class="slide-number anim-item">10 — Model-Level Summary</div>
+    <h2 class="slide-title anim-item">Average Metrics Across All 10 Categories</h2>
+    <table class="results-table anim-item">
+      <thead>
+        <tr><th>Model</th><th colspan="3">Contextual (Avg)</th><th colspan="3">Non-Contextual (Avg)</th></tr>
+        <tr><th></th><th>F<sub>w</sub> (%)</th><th>NER (%)</th><th>Bias Ratio</th><th>F<sub>w</sub> (%)</th><th>NER (%)</th><th>Bias Ratio</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Aya-8B</td><td>46.41</td><td>26.22</td><td>1.33</td><td>46.06</td><td>28.03</td><td>1.26</td></tr>
+        <tr><td>Qwen-2.5-7B</td><td class="cell-highlight">52.46</td><td>19.63</td><td class="cell-highlight">2.89</td><td class="cell-highlight">53.64</td><td>19.01</td><td class="cell-highlight">2.77</td></tr>
+        <tr><td>Qalb-1.0-8B</td><td>48.93</td><td class="cell-highlight">40.15</td><td>1.33</td><td>48.34</td><td class="cell-highlight">42.18</td><td>1.29</td></tr>
+        <tr><td>Gemma-2-2B</td><td>48.62</td><td>12.66</td><td>1.72</td><td>48.31</td><td>11.66</td><td>1.92</td></tr>
+        <tr><td>LLaMA-3.2-3B</td><td>46.92</td><td>9.63</td><td>1.36</td><td>47.48</td><td>8.92</td><td>1.29</td></tr>
+        <tr><td><strong>Mistral-7B</strong></td><td class="cell-highlight">7.62</td><td class="cell-highlight">38.97</td><td class="cell-highlight">1.00</td><td class="cell-highlight">7.83</td><td class="cell-highlight">45.88</td><td class="cell-highlight">1.00</td></tr>
+        <tr><td>Lughaat-1.0-8B</td><td>46.68</td><td>8.70</td><td>1.19</td><td>47.66</td><td>8.34</td><td>1.18</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- NEW Slide 12: In-Depth Model Findings -->
+  <section class="slide">
+    <div class="slide-number anim-item">11 — Model-by-Model Insights</div>
+    <h2 class="slide-title anim-item">Key Findings per <span class="highlight">Model</span></h2>
+    <div class="info-card anim-item">
+      <strong>Mistral-7B (Best Performer)</strong><br>
+      • Near-zero Western bias (F<sub>w</sub> ≈ 7.6%, R = 1.00)<br>
+      • Strong local preference &amp; highest stability<br>
+      • Excellent NER in non-contextual settings
+    </div>
+    <div class="info-card anim-item">
+      <strong>Qwen-2.5-7B (Worst Performer)</strong><br>
+      • Highest bias (F<sub>w</sub> ≈ 53%, R ≈ 2.8)<br>
+      • Extreme instability (Std up to 10⁶ scale)<br>
+      • Bias barely reduced by context
+    </div>
+    <div class="info-card anim-item">
+      <strong>Qalb-1.0-8B &amp; Lughaat-1.0-8B (Urdu Models)</strong><br>
+      • Highest cultural literacy (NER up to 42%)<br>
+      • Still show moderate Western bias (R &gt; 1.2)<br>
+      • Literacy does NOT eliminate bias
+    </div>
+ 
+    <p class="slide-body anim-item">Key takeaway: Even Urdu-specialized models inherit Western priors; only Mistral shows genuine cultural neutrality.</p>
+  </section>
+
+  <!-- Slide 13: Key Insights -->
+  <section class="slide">
+    <div class="slide-number anim-item">12 — Key Insights</div>
+    <h2 class="slide-title anim-item">What the Data <span class="highlight">Reveals</span></h2>
+    <ul class="bullet-list anim-item">
+      <li><i class="fas fa-chart-bar"></i> Strongest Western bias in <strong>Male Names</strong> (Fw 55.51%, Bias Ratio 4.12) and Literature</li>
+      <li><i class="fas fa-chart-bar"></i> Context reduces bias in 8/10 categories but never fully eliminates it</li>
+      <li><i class="fas fa-chart-bar"></i> “Cultural Literacy Gap”: High NER recognition does NOT guarantee low bias (Qalb example)</li>
+      <li><i class="fas fa-chart-bar"></i> Domestic categories (Food, Female Dress) show strongest local preference</li>
+      <li><i class="fas fa-chart-bar"></i> Mistral-7B is the clear outlier with reverse/local bias</li>
+      <li><i class="fas fa-chart-bar"></i> Larger instruction-tuned models (Qwen, Aya) exhibit highest instability</li>
+    </ul>
+  </section>
+
+  <!-- Slide 14: Conclusions -->
+  <section class="slide">
+    <div class="slide-number anim-item">13 — Conclusions</div>
+    <h2 class="slide-title anim-item">Summary of <span class="highlight">Findings</span></h2>
+    <p class="slide-body anim-item">Western cultural bias is systemic in current LLMs, especially in identity-related domains. Cultural context mitigates but does not eliminate the issue. Urdu-specialized models show higher literacy but similar bias patterns.</p>
+    <div class="info-card anim-item">
+      <div class="card-label">Core Takeaway</div>
+      <p>Recognizing a cultural entity does <strong>not</strong> guarantee fair treatment of that entity.</p>
+    </div>
+  </section>
+
+  <!-- Slide 15: Future Work -->
+  <section class="slide">
+    <div class="slide-number anim-item">14 — Future Work</div>
+    <h2 class="slide-title anim-item">Next Steps &amp; Recommendations</h2>
+    <ul class="bullet-list anim-item">
+      <li><i class="fas fa-arrow-right"></i> Test frontier models (GPT-4o, Claude 3.5, Grok-2)</li>
+      <li><i class="fas fa-arrow-right"></i> Explore dialectal nuances and intersectional identities (gender × culture)</li>
+      <li><i class="fas fa-arrow-right"></i> Long-form generation bias analysis</li>
+      <li><i class="fas fa-arrow-right"></i> Develop “Cultural RLHF” and constitutional AI techniques</li>
+      <li><i class="fas fa-arrow-right"></i> Investigate sentiment/toxicity correlation with bias</li>
+      <li><i class="fas fa-arrow-right"></i> Open-source culturally-augmented fine-tuning datasets for Pakistani languages</li>
+    </ul>
+  </section>
+
+  <!-- Slide 16: Thank You -->
+  <section class="slide">
+    <h2 class="slide-title anim-item" style="font-size: clamp(42px, 5.5vw, 76px)">Thank You</h2>
+    <p class="slide-body anim-item" style="font-size:1.4rem;margin-top:40px;">Questions?</p>
+  </section>
+
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const currNum = document.getElementById('currNum');
+  const totalNum = document.getElementById('totalNum');
+  const progressBar = document.getElementById('progressBar');
+
+  let currentSlide = 0;
+  totalNum.innerText = slides.length.toString().padStart(2, '0');
+
+  function updateSlides() {
+    slides.forEach((slide, index) => {
+      slide.classList.remove('active');
+      if (index === currentSlide) {
+        slide.classList.add('active');
+      }
+    });
+
+    currNum.innerText = (currentSlide + 1).toString().padStart(2, '0');
+    prevBtn.disabled = currentSlide === 0;
+    nextBtn.disabled = currentSlide === slides.length - 1;
+    
+    const progress = ((currentSlide + 1) / slides.length) * 100;
+    progressBar.style.width = `${progress}%`;
+  }
+
+  nextBtn.addEventListener('click', () => {
+    if (currentSlide < slides.length - 1) {
+      currentSlide++;
+      updateSlides();
+    }
+  });
+
+  prevBtn.addEventListener('click', () => {
+    if (currentSlide > 0) {
+      currentSlide--;
+      updateSlides();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') nextBtn.click();
+    if (e.key === 'ArrowLeft') prevBtn.click();
+  });
+
+  window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
+  };
+
+  updateSlides();
+</script>
+
+</body>
+</html>
